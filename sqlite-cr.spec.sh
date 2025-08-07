@@ -6,6 +6,8 @@ export SQLITE_CR_QUIET=1
 
 # sqlite-cr.spec.sh
 # Executable specification that documents and tests the sqlite-cr CLI tool
+# Following TDD approach: tests describe behavior, not aspirations
+# Make Kent Beck proud of me
 
 echo "=== sqlite-cr CLI Tool Specification ==="
 echo
@@ -27,9 +29,9 @@ echo
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Test 1: Tool exists and runs
-echo -n "✓ sqlite-cr command exists and runs... "
-if result=$(nix develop -c sqlite-cr :memory: "SELECT 1;" 2>&1) && echo "$result" | grep -q "1"; then
+# Test 1: Basic SQL execution and tool availability
+echo -n "✓ executes SQL queries correctly... "
+if result=$(nix develop -c sqlite-cr :memory: "SELECT 2*3 as answer;" 2>&1) && [[ "$result" == *"6"* ]]; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
@@ -37,9 +39,9 @@ else
     ((TESTS_FAILED++))
 fi
 
-# Test 2: Can execute basic SQL
-echo -n "✓ executes basic SQL queries... "
-if result=$(nix develop -c sqlite-cr :memory: "SELECT 1+1 as result;" 2>&1) && echo "$result" | grep -q "2"; then
+# Test 2: cr-sqlite extension loads and provides site ID functionality
+echo -n "✓ cr-sqlite extension provides site ID functionality... "
+if result=$(nix develop -c sqlite-cr :memory: "SELECT typeof(crsql_site_id()) as site_id_type;" 2>&1) && [[ "$result" == *"blob"* ]]; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
@@ -47,19 +49,9 @@ else
     ((TESTS_FAILED++))
 fi
 
-# Test 3: cr-sqlite extension is loaded
-echo -n "✓ cr-sqlite extension is pre-loaded... "
-if nix develop -c sqlite-cr :memory: "SELECT crsql_site_id() IS NOT NULL;" 2>&1 | grep -q "1"; then
-    echo "PASS"
-    ((TESTS_PASSED++))
-else
-    echo "FAIL"
-    ((TESTS_FAILED++))
-fi
-
-# Test 4: Can create CRDT tables
+# Test 3: CRDT table creation works correctly
 echo -n "✓ creates CRDT-enabled tables... "
-if nix develop -c sqlite-cr :memory: "CREATE TABLE items(id INTEGER PRIMARY KEY NOT NULL, name TEXT); SELECT crsql_as_crr('items'); SELECT 'OK';" 2>&1 | grep -q "OK"; then
+if result=$(nix develop -c sqlite-cr :memory: "CREATE TABLE items(id INTEGER PRIMARY KEY NOT NULL, name TEXT); SELECT crsql_as_crr('items'); SELECT 'SUCCESS';" 2>&1) && [[ "$result" == *"SUCCESS"* ]]; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
@@ -67,9 +59,9 @@ else
     ((TESTS_FAILED++))
 fi
 
-# Test 5: CRDT functions are available
-echo -n "✓ provides cr-sqlite functions... "
-if nix develop -c sqlite-cr :memory: "SELECT COUNT(*) > 0 FROM pragma_function_list WHERE name LIKE 'crsql%';" 2>&1 | grep -q "1"; then
+# Test 4: cr-sqlite functions are available
+echo -n "✓ provides cr-sqlite function suite... "
+if result=$(nix develop -c sqlite-cr :memory: "SELECT COUNT(*) >= 5 as has_functions FROM pragma_function_list WHERE name LIKE 'crsql%';" 2>&1) && [[ "$result" == *"1"* ]]; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
@@ -77,9 +69,9 @@ else
     ((TESTS_FAILED++))
 fi
 
-# Test 6: Can get site ID
-echo -n "✓ generates unique site IDs... "
-if nix develop -c sqlite-cr :memory: "SELECT length(crsql_site_id()) > 0;" 2>&1 | grep -q "1"; then
+# Test 5: CRDT operations perform data persistence
+echo -n "✓ performs CRDT data operations... "
+if result=$(nix develop -c sqlite-cr :memory: "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" 2>&1) && [[ "$result" == *"test-data"* ]]; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
@@ -87,19 +79,9 @@ else
     ((TESTS_FAILED++))
 fi
 
-# Test 7: Supports in-memory databases
-echo -n "✓ supports in-memory databases... "
-if nix develop -c sqlite-cr :memory: "CREATE TABLE test(id INTEGER PRIMARY KEY); SELECT 'OK';" 2>&1 | grep -q "OK"; then
-    echo "PASS"
-    ((TESTS_PASSED++))
-else
-    echo "FAIL"
-    ((TESTS_FAILED++))
-fi
-
-# Test 8: Can perform CRDT operations
-echo -n "✓ performs CRDT merge operations... "
-if nix develop -c sqlite-cr :memory: "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (1, 'hello'); SELECT content FROM docs WHERE id = 1;" 2>&1 | grep -q "hello"; then
+# Test 6: Error handling preserves exit codes
+echo -n "✓ handles SQL errors with proper exit codes... "
+if ! nix develop -c sqlite-cr :memory: "INVALID SQL SYNTAX;" 2>/dev/null; then
     echo "PASS"
     ((TESTS_PASSED++))
 else
