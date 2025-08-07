@@ -32,7 +32,7 @@
           };
           "aarch64-linux" = {
             url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-linux-aarch64.zip";
-            hash = pkgs.lib.fakeSha256;  # TODO: Replace with actual hash after first build
+            hash = "sha256-1cspr6rv1r86jym8lplpajzhj623n9dzvhszfccblhmrxzm9csdr";
             lib = "crsqlite.so";
           };
         };

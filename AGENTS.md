@@ -9,7 +9,7 @@ Created a Nix flake that provides SQLite with the cr-sqlite CRDT extension pre-l
    - Cryptographically verifies each platform binary with unique SHA256 hashes
    - Wraps SQLite with the extension pre-loaded
    - Filters out the annoying "sqlite3_close() returns 5" error
-   - Works on macOS (arm64/x86_64) and Linux (x86_64)
+   - Works on macOS (arm64/x86_64) and Linux (x86_64/arm64)
    - Clean platform configuration without code duplication
 
 2. **Comprehensive test suite** (`sqlite-cr/sqlite-cr.spec.sh`):
@@ -92,7 +92,7 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 - **Better assertions**: Replaced brittle grep patterns with robust test conditions
 
 ## o3-pro Review Improvements
-- **Added aarch64-linux support**: Platform config now includes ARM64 Linux (hash pending)
+- **Added aarch64-linux support**: Platform config now includes ARM64 Linux with verified hash
 - **Streaming output**: Replaced output capturing with direct streaming for better performance
 - **Fixed installPhase**: Now handles both root and subdirectory file extraction
 - **Added meta.mainProgram**: Enables `nix search` functionality
