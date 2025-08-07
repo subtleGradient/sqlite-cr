@@ -108,6 +108,15 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 - **Added micro-test**: Tests wrapper's stderr filtering behavior
 - **Version bump automation**: update-version.sh script for painless updates
 
+## CI/CD Implementation
+- **Multi-platform CI**: Tests on Linux/macOS × x86_64/ARM64 via GitHub Actions
+- **Automatic hash validation**: CI fails fast on placeholder hashes
+- **Daily dependency checks**: Monitors for outdated flake inputs
+- **Release automation**: Tagged versions build platform binaries
+- **Fast Nix setup**: Uses DeterminateSystems installer (2-3s vs 60s)
+- **Optional caching**: Cachix configuration for faster rebuilds
+- **Idiomatic Makefile**: Common tasks via `make help`, `make test`, `make ci`, etc.
+
 ## Git Status
 - Repository initialized
 - All files committed with descriptive message

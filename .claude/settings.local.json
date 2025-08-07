@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(make:*)",
+      "Bash(make test:*)"
     ],
     "deny": []
   }

@@ -1,0 +1,58 @@
+name: Flake Lock Watch
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM UTC
+  workflow_dispatch:  # Allow manual runs
+
+jobs:
+  lock-check:
+    runs-on: ubuntu-latest
+    name: Check flake inputs & hashes
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Fast Nix install
+    - uses: DeterminateSystems/nix-installer-action@v9
+
+    # Check flake inputs are up to date
+    - uses: DeterminateSystems/flake-checker-action@v6
+      with:
+        send-pr-on-update: true
+        pr-title: "Update flake.lock"
+        pr-labels: "dependencies,automated"
+
+    # Verify no placeholder hashes
+    - name: Check for placeholder hashes
+      run: |
+        if grep -q 'fakeSha256' flake.nix; then
+          echo "::error title=Placeholder Hash Found::fakeSha256 detected in flake.nix"
+          echo "This indicates incomplete platform support configuration"
+          
+          # Try to get the correct hash by forcing evaluation
+          echo "Attempting to fetch correct hash..."
+          set +e
+          nix build .#packages.aarch64-linux.default --no-link 2>&1 | grep "got:" | tail -1
+          set -e
+          
+          exit 1
+        fi
+
+    # Verify all platforms build successfully
+    - name: Verify all platforms
+      run: |
+        echo "Checking all platform builds..."
+        for system in x86_64-linux aarch64-linux x86_64-darwin aarch64-darwin; do
+          echo "Building for $system..."
+          nix build .#packages.$system.default --no-link || {
+            echo "::error title=Build failed for $system::Platform $system failed to build"
+            exit 1
+          }
+        done
+
+    # Test version update script exists and is executable
+    - name: Check update script
+      run: |
+        if [ ! -x update-version.sh ]; then
+          echo "::warning title=Update script missing::update-version.sh not found or not executable"
+        fi

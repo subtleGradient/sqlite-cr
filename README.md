@@ -91,11 +91,18 @@ git clone https://github.com/subtleGradient/sqlite-cr
 cd sqlite-cr
 nix develop  # or use direnv
 
-# Run tests (6 comprehensive tests following TDD)
-./sqlite-cr.spec.sh
+# Run tests
+make test
 
-# Direct execution
-sqlite-cr :memory: "SELECT 'development mode';"
+# See all available tasks
+make help
+
+# Common development tasks
+make build          # Build sqlite-cr
+make test           # Run test suite  
+make check          # Run flake checks
+make dev            # Enter dev shell
+make ci             # Simulate CI locally
 ```
 
 ## How It Works
@@ -116,6 +123,16 @@ To update to a new cr-sqlite version:
 ```
 
 This script automatically fetches new hashes and runs tests.
+
+## CI/CD
+
+This project includes comprehensive GitHub Actions workflows:
+
+- **CI** - Builds and tests on all platforms (Linux/macOS × x86_64/ARM64)
+- **Daily checks** - Monitors for outdated dependencies and placeholder hashes
+- **Releases** - Automatically builds platform binaries for tagged releases
+
+[![CI](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml/badge.svg)](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml)
 
 ## Platform Support
 

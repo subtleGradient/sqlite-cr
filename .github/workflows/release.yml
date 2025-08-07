@@ -1,0 +1,86 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        body: |
+          SQLite + cr-sqlite bundled for easy use.
+          
+          ## Installation
+          
+          Via Nix:
+          ```bash
+          nix run github:${{ github.repository }}#sqlite-cr -- :memory: "SELECT crsql_site_id();"
+          ```
+          
+          Or download platform-specific binaries below.
+
+  build-binaries:
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+            name: linux-x86_64
+          - os: ubuntu-latest
+            system: aarch64-linux
+            name: linux-aarch64
+          - os: macos-15
+            system: x86_64-darwin
+            name: darwin-x86_64
+          - os: macos-14
+            system: aarch64-darwin
+            name: darwin-aarch64
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.name }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: DeterminateSystems/nix-installer-action@v9
+
+    - run: |
+        mkdir -p ~/.config/nix
+        echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+
+    # Build for specific system
+    - name: Build sqlite-cr
+      run: |
+        nix build .#packages.${{ matrix.system }}.default
+        cp -L result/bin/sqlite-cr sqlite-cr-${{ matrix.name }}
+        chmod +x sqlite-cr-${{ matrix.name }}
+
+    # Create tarball
+    - name: Create archive
+      run: tar czf sqlite-cr-${{ matrix.name }}.tar.gz sqlite-cr-${{ matrix.name }}
+
+    # Upload to release
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./sqlite-cr-${{ matrix.name }}.tar.gz
+        asset_name: sqlite-cr-${{ matrix.name }}.tar.gz
+        asset_content_type: application/gzip

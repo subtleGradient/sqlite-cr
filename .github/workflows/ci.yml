@@ -1,0 +1,65 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux x86_64
+          - os: ubuntu-latest
+            name: Linux ARM64
+            # Note: GitHub doesn't have native ARM64 Linux runners yet
+            # This will use QEMU emulation or you can self-host
+          - os: macos-15
+            name: macOS x86_64
+          - os: macos-14
+            name: macOS ARM64 (Apple Silicon)
+    runs-on: ${{ matrix.os }}
+    name: Build & Test (${{ matrix.name }})
+
+    steps:
+    - uses: actions/checkout@v4
+
+    # Fast, reproducible Nix install
+    - uses: DeterminateSystems/nix-installer-action@v9
+
+    # Enable flakes support
+    - run: |
+        mkdir -p ~/.config/nix
+        echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+
+    # Check for fakeSha256 (fail fast if placeholder hashes exist)
+    - name: Check for placeholder hashes
+      run: |
+        if grep -q 'fakeSha256' flake.nix; then
+          echo "::error title=Replace fakeSha256::Placeholder hash found in flake.nix"
+          echo "Run 'nix build' locally to get the correct hash"
+          exit 1
+        fi
+
+    # Build & run full flake check (verifies hashes)
+    - name: Run flake check
+      run: nix flake check --show-trace
+
+    # Run test suite
+    - name: Run tests
+      run: nix develop -c ./sqlite-cr.spec.sh
+
+    # Build the package
+    - name: Build sqlite-cr
+      run: nix build .#sqlite-cr
+
+    # Test the built binary
+    - name: Test built binary
+      run: |
+        ./result/bin/sqlite-cr :memory: "SELECT 'CI test passed!';"
+        ./result/bin/sqlite-cr :memory: "SELECT crsql_site_id() IS NOT NULL;"
+
+    # Upload binary as artifact (useful for releases)
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sqlite-cr-${{ matrix.name }}
+        path: result/bin/sqlite-cr

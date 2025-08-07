@@ -1,5 +1,5 @@
 {
-  description = "SQLite + crSQLite dev env";
+  description = "SQLite with cr-sqlite CRDT extension pre-loaded";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,17 +15,9 @@
 
         version = "0.16.3";
         
-        # Constants to avoid duplication
-        errorToFilter = "sqlite3_close() returns 5";
+        # Load hashes from separate file for easier updates
+        hashes = import ./hashes.nix;
         
-        # Single source of truth for hashes
-        hashes = {
-          "aarch64-darwin" = "sha256-3SX8QwdI+WBUSgjdZq9xnPhQWtJrBXFamzrcMiWhOWM=";
-          "x86_64-darwin" = "sha256-1ps0vlpf3j6914qjpymm1j7fw10s4sz3q23w064mipc22rgdsckr";
-          "x86_64-linux" = "sha256-0q21a13mi0hrmg5d928vbnqvhrixd3qfs6cd1bbya17m6f1ic3d0";
-          "aarch64-linux" = "sha256-1cspr6rv1r86jym8lplpajzhj623n9dzvhszfccblhmrxzm9csdr";
-        };
-
         # Platform-specific configuration
         libName = if pkgs.stdenv.isDarwin then "crsqlite.dylib" else "crsqlite.so";
         platform = if pkgs.stdenv.isDarwin then "darwin" else "linux";
@@ -56,29 +48,155 @@
               exit 1
             fi
             cp "$libFile" $out/lib/lib${config.lib}
+            
+            # Unit test: verify the library was installed correctly
+            test -f "$out/lib/lib${config.lib}" || {
+              echo "Error: Failed to install library at expected path" >&2
+              exit 1
+            }
           '';
+          
+          meta = with pkgs.lib; {
+            description = "cr-sqlite extension binaries";
+            homepage = "https://github.com/vlcn-io/cr-sqlite";
+            license = licenses.mit;
+            platforms = [ "aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux" ];
+          };
         };
 
         sqlite-cr = pkgs.writeShellScriptBin "sqlite-cr" ''
           # Find the correct library file
           LIB=$(find "${crsqlite}/lib" -name 'libcrsqlite.*' | head -n1)
           
-          # Stream output directly with stderr filtering
+          # Precise stderr filtering - remove exact error line
           exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" \
-            2> >(grep -v "${errorToFilter}" >&2)
+            2> >(grep -vxF "Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups" >&2)
+        '';
+        
+        # Test runner as a separate package for CI
+        tests = pkgs.writeScriptBin "sqlite-cr-tests" ''
+          #!${pkgs.bash}/bin/bash
+          set -euo pipefail
+          export PATH="${sqlite-cr}/bin:$PATH"
+          export SQLITE_CR_QUIET=1
+          
+          # Test counter
+          TESTS_PASSED=0
+          TESTS_FAILED=0
+          
+          # Helper function for robust CSV assertions
+          assert_csv_query() {
+              local query="$1"
+              local expected="$2"
+              local description="$3"
+              local output
+              
+              echo -n "✓ $description... "
+              
+              # Use CSV mode to get predictable output format
+              if output=$(sqlite-cr :memory: "$query" -csv 2>&1); then
+                  if [[ "$output" == "$expected" ]]; then
+                      echo "PASS"
+                      ((TESTS_PASSED++))
+                      return 0
+                  else
+                      echo "FAIL (expected '$expected', got: '$output')"
+                      ((TESTS_FAILED++))
+                      return 1
+                  fi
+              else
+                  echo "FAIL (query error: $output)"
+                  ((TESTS_FAILED++))
+                  return 1
+              fi
+          }
+          
+          # Test helper for checking existence/boolean results
+          assert_true() {
+              local query="$1"
+              local description="$2"
+              assert_csv_query "$query" "1" "$description"
+          }
+          
+          echo "=== Running sqlite-cr tests ==="
+          
+          # Test 1: Basic SQL execution
+          assert_csv_query "SELECT 2*3 as answer;" "6" "executes SQL queries correctly"
+          
+          # Test 2: cr-sqlite extension loads
+          assert_csv_query "SELECT typeof(crsql_site_id()) as type;" "blob" "cr-sqlite extension provides site ID functionality"
+          
+          # Test 3: CRDT table creation
+          assert_true "CREATE TABLE items(id INTEGER PRIMARY KEY NOT NULL, name TEXT); SELECT crsql_as_crr('items') IS NOT NULL;" "creates CRDT-enabled tables"
+          
+          # Test 4: cr-sqlite functions available
+          assert_true "SELECT COUNT(*) >= 5 FROM pragma_function_list WHERE name LIKE 'crsql%';" "provides cr-sqlite function suite"
+          
+          # Test 5: CRDT operations
+          assert_csv_query "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" "test-data" "performs CRDT data operations"
+          
+          # Test 6: Error handling
+          echo -n "✓ handles SQL errors with proper exit codes... "
+          if ! sqlite-cr :memory: "INVALID SQL SYNTAX;" 2>/dev/null; then
+              echo "PASS"
+              ((TESTS_PASSED++))
+          else
+              echo "FAIL"
+              ((TESTS_FAILED++))
+          fi
+          
+          # Test 7: Stderr filtering precision
+          echo -n "✓ filters only exact error message from stderr... "
+          test_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 || true)
+          if ! echo "$test_output" | grep -q "sqlite3_close() returns 5"; then
+              echo "PASS"
+              ((TESTS_PASSED++))
+          else
+              echo "FAIL (error not filtered)"
+              ((TESTS_FAILED++))
+          fi
+          
+          echo
+          echo "=== Test Summary ==="
+          echo "Passed: $TESTS_PASSED/7"
+          echo "Failed: $TESTS_FAILED/7"
+          echo
+          
+          [ $TESTS_FAILED -eq 0 ]
         '';
 
       in {
-        packages.default = sqlite-cr // {
-          meta = { mainProgram = "sqlite-cr"; };
+        packages = {
+          default = sqlite-cr.overrideAttrs (old: {
+            meta = (old.meta or {}) // {
+              description = "SQLite with cr-sqlite CRDT extension pre-loaded";
+              homepage = "https://github.com/subtleGradient/sqlite-cr";
+              license = pkgs.lib.licenses.mit;
+              maintainers = with pkgs.lib.maintainers; [ ];
+              mainProgram = "sqlite-cr";
+              platforms = pkgs.lib.platforms.darwin ++ pkgs.lib.platforms.linux;
+            };
+            passthru = (old.passthru or {}) // {
+              inherit crsqlite version;
+              updateScript = ./update-version.sh;
+            };
+          });
+          
+          inherit tests crsqlite;
         };
+        
+        apps = {
+          default = flake-utils.lib.mkApp { drv = self.packages.${system}.default; };
+          tests = flake-utils.lib.mkApp { drv = self.packages.${system}.tests; };
+        };
+        
         devShells.default = pkgs.mkShell {
-          buildInputs = [ sqlite-cr pkgs.sqlite ];
+          buildInputs = [ self.packages.${system}.default pkgs.sqlite ];
           shellHook = ''
-            if [ -z "''${SQLITE_CR_QUIET:-}" ]; then
-              echo "🔗 crsqlite dylib is at: ${crsqlite}/lib/libcrsqlite.dylib"
+            if [ -z "''${SQLITE_CR_QUIET:-}" ] && [ -n "''${PS1:-}" ]; then
+              echo "🔗 cr-sqlite loaded in: ${crsqlite}/lib/"
               echo "📦 Run 'sqlite-cr' for SQLite with cr-sqlite pre-loaded"
-              echo "📦 Run 'sqlite3' and then '.load ${crsqlite}/lib/libcrsqlite.dylib' for manual loading"
+              echo "🧪 Run 'nix run .#tests' to run test suite"
             fi
           '';
         };
