@@ -17,7 +17,6 @@ Created a Nix flake that provides SQLite with the cr-sqlite CRDT extension pre-l
    - All tests passing with robust assertions
    - Includes error handling tests
    - Documents usage patterns
-   - Makes Kent Beck proud
 
 3. **Zero-install distribution** via Nix:
    - `nix run github:subtleGradient/sqlite-cr -- :memory: "SELECT crsql_site_id();"`
@@ -75,8 +74,8 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 
 # List cr-sqlite functions
 nix run github:subtleGradient/sqlite-cr -- :memory: "
-  SELECT name FROM pragma_function_list 
-  WHERE name LIKE 'crsql%' 
+  SELECT name FROM pragma_function_list
+  WHERE name LIKE 'crsql%'
   LIMIT 10;
 "
 ```
@@ -87,11 +86,18 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 
 ## Recent Improvements (Code Review)
 - **Fixed critical security vulnerability**: Each platform now has unique, verified SHA256 hashes
-- **Improved code quality**: Eliminated duplication with clean `platformConfig` architecture  
+- **Improved code quality**: Eliminated duplication with clean `platformConfig` architecture
 - **Enhanced test suite**: Reduced from 8 to 6 focused tests following TDD principles
 - **Added error handling**: Tests now verify proper exit codes on SQL errors
 - **Better assertions**: Replaced brittle grep patterns with robust test conditions
-- **Added TDD pledge**: "Make Kent Beck proud of me"
+
+## o3-pro Review Improvements
+- **Added aarch64-linux support**: Platform config now includes ARM64 Linux (hash pending)
+- **Streaming output**: Replaced output capturing with direct streaming for better performance
+- **Fixed installPhase**: Now handles both root and subdirectory file extraction
+- **Added meta.mainProgram**: Enables `nix search` functionality
+- **Optimized test suite**: All tests run in single nix develop session (30-60s → ~5s)
+- **Removed unnecessary chmod**: Libraries no longer marked executable
 
 ## Git Status
 - Repository initialized

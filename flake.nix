@@ -30,6 +30,11 @@
             hash = "sha256-0q21a13mi0hrmg5d928vbnqvhrixd3qfs6cd1bbya17m6f1ic3d0";
             lib = "crsqlite.so";
           };
+          "aarch64-linux" = {
+            url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-linux-aarch64.zip";
+            hash = pkgs.lib.fakeSha256;  # TODO: Replace with actual hash after first build
+            lib = "crsqlite.so";
+          };
         };
 
         config = platformConfig.${system} or (throw "Unsupported platform: ${system}");
@@ -46,28 +51,28 @@
 
           installPhase = ''
             mkdir -p $out/lib
-            cp ${config.lib} $out/lib/lib${config.lib}
-            chmod +x $out/lib/*
+            # Handle both root and subdirectory extraction
+            if [ -f ${config.lib} ]; then
+              cp ${config.lib} $out/lib/lib${config.lib}
+            else
+              find . -name ${config.lib} -exec cp {} $out/lib/lib${config.lib} \;
+            fi
           '';
         };
 
         sqlite-cr = pkgs.writeShellScriptBin "sqlite-cr" ''
-          LIB="${crsqlite}/lib/libcrsqlite.dylib"
-          [ ! -f "$LIB" ] && LIB="${crsqlite}/lib/libcrsqlite.so"
-
-          # Run sqlite3 and capture exit code
-          set +e
-          output=$(${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" 2>&1)
-          exit_code=$?
-          set -e
-
-          # Filter output and preserve exit code
-          echo "$output" | grep -v "sqlite3_close() returns 5" || true
-          exit $exit_code
+          # Find the correct library file
+          LIB=$(find "${crsqlite}/lib" -name 'libcrsqlite.*' | head -n1)
+          
+          # Stream output directly with stderr filtering
+          exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" \
+            2> >(grep -v "sqlite3_close() returns 5" >&2)
         '';
 
       in {
-        packages.default = sqlite-cr;
+        packages.default = sqlite-cr // {
+          meta = { mainProgram = "sqlite-cr"; };
+        };
         devShells.default = pkgs.mkShell {
           buildInputs = [ sqlite-cr pkgs.sqlite ];
           shellHook = ''

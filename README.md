@@ -4,7 +4,8 @@ SQLite with the cr-sqlite CRDT extension pre-loaded. Zero installation required!
 
 ✅ **Security verified** - Each platform binary has been cryptographically verified
 ✅ **Fully tested** - Comprehensive test suite with TDD methodology
-✅ **Production ready** - Clean implementation following Kent Beck's principles
+✅ **Fast & streaming** - Direct output streaming, no buffering delays
+✅ **Multi-platform** - macOS (arm64/x86_64) and Linux (x86_64/arm64*)
 
 ## 🚀 Quick Start
 
@@ -104,7 +105,19 @@ This flake:
 2. Cryptographically verifies each platform binary with unique SHA256 hashes
 3. Wraps SQLite with the extension pre-loaded
 4. Provides a clean CLI interface
-5. Works on macOS (arm64/x86_64) and Linux (x86_64)
+5. Works on macOS (arm64/x86_64) and Linux (x86_64/arm64*)
+6. Streams output directly without buffering for better performance
+
+## Platform Support
+
+| Platform | Architecture | Status |
+|----------|--------------|---------|
+| macOS    | arm64 (Apple Silicon) | ✅ Verified |
+| macOS    | x86_64 (Intel) | ✅ Verified |
+| Linux    | x86_64 | ✅ Verified |
+| Linux    | arm64/aarch64 | ⚠️ Hash pending* |
+
+*Linux arm64 support requires verifying the binary hash after first download.
 
 ## License
 
