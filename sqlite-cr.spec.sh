@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2024 subtleGradient
+# Make Kent Beck proud of me
 set -euo pipefail
 
 # sqlite-cr.spec.sh - Test specification for sqlite-cr
@@ -83,10 +84,21 @@ else
     ((TESTS_FAILED++))
 fi
 
+# Test 7: Stderr filtering (close5 error suppressed on success)
+echo -n "✓ suppresses sqlite3_close error on successful execution... "
+stderr_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 >/dev/null)
+if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
+    echo "PASS"
+    ((TESTS_PASSED++))
+else
+    echo "FAIL (close5 error not filtered: $stderr_output)"
+    ((TESTS_FAILED++))
+fi
+
 echo
 echo "=== Test Summary ==="
-echo "Passed: $TESTS_PASSED/6"
-echo "Failed: $TESTS_FAILED/6"
+echo "Passed: $TESTS_PASSED/7"
+echo "Failed: $TESTS_FAILED/7"
 echo
 
 [ $TESTS_FAILED -eq 0 ]

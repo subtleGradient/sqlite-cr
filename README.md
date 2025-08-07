@@ -2,10 +2,10 @@
 
 SQLite with the cr-sqlite CRDT extension pre-loaded. Zero installation required!
 
-✅ **Fully tested** - Comprehensive test suite with TDD methodology
-✅ **Fast & streaming** - Direct output streaming, no buffering delays
-✅ **Multi-platform** - macOS (arm64/x86_64) and Linux (x86_64/arm64)
-✅ **Easy updates** - Simple version bump script included
+✅ **Fully tested** - Comprehensive test suite with TDD methodology  
+✅ **Fast & streaming** - Direct output streaming, no buffering delays  
+✅ **Multi-platform** - macOS (arm64/x86_64) and Linux (x86_64/arm64)  
+✅ **Easy updates** - Simple version bump script included  
 
 ## 🚀 Quick Start
 
@@ -114,6 +114,7 @@ This flake:
 4. Provides a clean CLI interface
 5. Works on macOS (arm64/x86_64) and Linux (x86_64/arm64)
 6. Streams output directly without buffering for better performance
+7. Surgically filters the harmless sqlite3_close() error on successful execution
 
 ## Updating cr-sqlite Version
 
@@ -134,9 +135,26 @@ This project includes comprehensive GitHub Actions workflows:
 
 [![CI](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml/badge.svg)](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml)
 
-## Known Issues
+## Error Handling
 
-- **sqlite3_close() error**: You may see `Error: sqlite3_close() returns 5` when exiting. This is harmless and relates to how cr-sqlite manages internal state. It does not affect functionality or data integrity.
+### sqlite3_close() returns 5 Error
+
+By default, sqlite-cr automatically filters the harmless `sqlite3_close() returns 5` error that appears on successful execution. This error is related to cr-sqlite's internal state management and does not affect functionality or data integrity.
+
+**Behavior:**
+- **Success (exit code 0)**: The error line is filtered out automatically
+- **Error (non-zero exit)**: All error messages are shown as-is for debugging
+- **Opt-out**: Set `SQLITE_CR_SHOW_CLOSE5=1` to see the error even on success
+
+```bash
+# Normal usage - close5 error filtered
+sqlite-cr :memory: "SELECT 1;"
+
+# Show the close5 error for debugging
+SQLITE_CR_SHOW_CLOSE5=1 sqlite-cr :memory: "SELECT 1;"
+```
+
+The filtering is surgical - only the exact error line is removed, preserving all other stderr output.
 
 ## Platform Support
 

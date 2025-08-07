@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2024 subtleGradient
+# Make Kent Beck proud of me
 
 {
   description = "SQLite with cr-sqlite CRDT extension pre-loaded";
@@ -87,9 +88,27 @@
           
           LIB="''${libs[0]}"
           
-          # Direct execution without stderr filtering to avoid complexity
-          # The sqlite3_close error is harmless and can be ignored by users
-          exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@"
+          # Surgical stderr filter for sqlite3_close() returns 5 error
+          if [ -n "''${SQLITE_CR_SHOW_CLOSE5:-}" ]; then
+              # User wants to see the close5 error
+              exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@"
+          else
+              # Filter out the specific error line when exit code is 0
+              tmpfile=$(mktemp)
+              ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" 2>"$tmpfile"
+              exit_code=$?
+              
+              if [ $exit_code -eq 0 ]; then
+                  # Success: filter out the exact error line
+                  sed '/^Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups$/d' "$tmpfile" >&2
+              else
+                  # Error: show all stderr as-is
+                  cat "$tmpfile" >&2
+              fi
+              
+              rm -f "$tmpfile"
+              exit $exit_code
+          fi
         '';
         
         # Test runner as a separate package for CI
@@ -164,10 +183,21 @@
               ((TESTS_FAILED++))
           fi
           
+          # Test 7: Stderr filtering (close5 error suppressed on success)
+          echo -n "✓ suppresses sqlite3_close error on successful execution... "
+          stderr_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 >/dev/null)
+          if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
+              echo "PASS"
+              ((TESTS_PASSED++))
+          else
+              echo "FAIL (close5 error not filtered: $stderr_output)"
+              ((TESTS_FAILED++))
+          fi
+          
           echo
           echo "=== Test Summary ==="
-          echo "Passed: $TESTS_PASSED/6"
-          echo "Failed: $TESTS_FAILED/6"
+          echo "Passed: $TESTS_PASSED/7"
+          echo "Failed: $TESTS_FAILED/7"
           echo
           
           [ $TESTS_FAILED -eq 0 ]
