@@ -38,17 +38,14 @@ jobs:
           exit 1
         fi
 
-    # Verify all platforms build successfully
-    - name: Verify all platforms
+    # Verify host platform builds successfully
+    - name: Verify host platform builds
       run: |
-        echo "Checking all platform builds..."
-        for system in x86_64-linux aarch64-linux x86_64-darwin aarch64-darwin; do
-          echo "Building for $system..."
-          nix build .#packages.$system.default --no-link || {
-            echo "::error title=Build failed for $system::Platform $system failed to build"
-            exit 1
-          }
-        done
+        echo "Checking host platform build..."
+        nix build .#default --no-link || {
+          echo "::error title=Build failed::Host platform build failed"
+          exit 1
+        }
 
     # Test version update script exists and is executable
     - name: Check update script

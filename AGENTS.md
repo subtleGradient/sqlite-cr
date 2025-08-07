@@ -90,6 +90,7 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 - **Enhanced test suite**: Reduced from 8 to 6 focused tests following TDD principles
 - **Added error handling**: Tests now verify proper exit codes on SQL errors
 - **Better assertions**: Replaced brittle grep patterns with robust test conditions
+- **Stderr handling**: The sqlite3_close() error is now visible but documented as harmless in README
 
 ## o3-pro Review Improvements
 - **Added aarch64-linux support**: Platform config now includes ARM64 Linux with verified hash

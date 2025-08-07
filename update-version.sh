@@ -133,22 +133,12 @@ echo "Writing hashes..."
 # Write hashes
 for platform in "${PLATFORMS[@]}"; do
     hash="${fetched_hashes[$platform]}"
-        # Convert to SRI format for consistency
-        # Note: 'nix hash to-sri' is deprecated, using 'nix hash convert'
-        if command -v nix hash convert &>/dev/null; then
-            sri_hash=$(echo "$hash" | nix hash convert --hash-algo sha256 --to sri 2>/dev/null || echo "sha256-$hash")
-        else
-            # Fallback for older nix versions
-            sri_hash="sha256-$hash"
-        fi
-        echo "✓ ($sri_hash)"
-        echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
-    else
-        echo "✗ FAILED"
-        echo "Error: Failed to fetch $platform binary from $url" >&2
-        rm -f hashes.nix.new
-        exit 1
+    # Convert to SRI (base64) for consistency
+    if command -v nix >/dev/null 2>&1; then
+        sri_hash="$(printf '%s' "$hash" | nix hash convert --hash-algo sha256 --to sri 2>/dev/null || true)"
     fi
+    : "${sri_hash:=sha256-$hash}"
+    echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
 done
 
 echo "}" >> hashes.nix.new

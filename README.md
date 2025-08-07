@@ -78,7 +78,7 @@ nix build
 
   # In your system configuration
   environment.systemPackages = [
-    inputs.sqlite-cr.packages.${system}.default
+    inputs.sqlite-cr.packages.${pkgs.system}.default
   ];
 }
 ```
@@ -129,7 +129,7 @@ This script automatically fetches new hashes and runs tests.
 This project includes comprehensive GitHub Actions workflows:
 
 - **CI** - Builds and tests on all platforms (Linux/macOS × x86_64/ARM64)
-- **Daily checks** - Monitors for outdated dependencies and placeholder hashes
+- **Monthly checks** - Monitors for outdated dependencies and placeholder hashes
 - **Releases** - Automatically builds platform binaries for tagged releases
 
 [![CI](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml/badge.svg)](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml)
