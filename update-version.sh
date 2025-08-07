@@ -52,11 +52,10 @@ for platform in "${PLATFORMS[@]}"; do
     # Fetch hash with proper error handling
     if hash=$(nix-prefetch-url "$url" --unpack 2>/dev/null); then
         echo "✓"
-        # Ensure we have the sha256- prefix
-        if [[ ! "$hash" =~ ^sha256- ]]; then
-            hash="sha256-$hash"
-        fi
-        echo "  \"$platform\" = \"$hash\";" >> hashes.nix.new
+        # nix-prefetch-url outputs base32, but Nix accepts both base32 and base64 in SRI format
+        # We'll use the base32 format with sha256- prefix (SRI format)
+        sri_hash="sha256-$hash"
+        echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
     else
         echo "✗ FAILED"
         echo "Error: Failed to fetch $platform binary from $url" >&2
