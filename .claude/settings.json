@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(nix-prefetch-url:*)",
+      "Bash(./sqlite-cr.spec.sh:*)",
+      "Bash(nix flake check:*)",
+      "Bash(nix develop:*)"
+    ],
+    "deny": []
+  }
+}
