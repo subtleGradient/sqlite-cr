@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2024 subtleGradient
-# Make Kent Beck proud of me
 set -euo pipefail
 
 # sqlite-cr.spec.sh - Test specification for sqlite-cr
@@ -29,9 +28,9 @@ assert_csv_query() {
     local expected="$2"
     local description="$3"
     local output
-    
+
     echo -n "✓ $description... "
-    
+
     # Use CSV mode to get predictable output format
     if output=$(sqlite-cr -csv :memory: "$query" 2>/dev/null); then
         if [[ "$output" == "$expected" ]]; then
