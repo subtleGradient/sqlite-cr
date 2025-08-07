@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2024 subtleGradient
 set -euo pipefail
 
 # update-version.sh
@@ -14,9 +16,20 @@ fi
 NEW_VERSION="$1"
 echo "Updating to cr-sqlite v$NEW_VERSION..."
 
-# Update version in flake.nix
-sed -i.bak "s/version = \".*\";/version = \"$NEW_VERSION\";/" flake.nix
+# Update version in flake.nix (only the first occurrence)
+# Using more precise sed to avoid multiple replacements
+if ! sed -i.bak '0,/^[[:space:]]*version = ".*";/s//  version = "'"$NEW_VERSION"'";/' flake.nix; then
+    echo "Error: Failed to update version in flake.nix" >&2
+    exit 1
+fi
 rm -f flake.nix.bak
+
+# Verify exactly one version line was updated
+version_count=$(grep -c "version = \"$NEW_VERSION\"" flake.nix)
+if [ "$version_count" -ne 1 ]; then
+    echo "Error: Expected 1 version update, found $version_count" >&2
+    exit 1
+fi
 
 # Prepare new hashes file
 cat > hashes.nix.new <<EOF
@@ -32,7 +45,23 @@ PLATFORMS=(
     "aarch64-linux"
 )
 
-echo "Fetching new hashes..."
+echo
+echo "⚠️  WARNING: This script downloads binaries and computes their hashes."
+echo "   This is a TOFU (Trust On First Use) operation."
+echo "   Verify the upstream release before trusting these hashes!"
+echo "   Release URL: https://github.com/vlcn-io/cr-sqlite/releases/tag/v${NEW_VERSION}"
+echo
+read -p "Continue? (y/N) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Aborted."
+    exit 1
+fi
+
+echo "Fetching new hashes (with verification)..."
+
+# First pass: fetch all hashes
+declare -A fetched_hashes
 for platform in "${PLATFORMS[@]}"; do
     echo -n "  $platform: "
     
@@ -51,10 +80,68 @@ for platform in "${PLATFORMS[@]}"; do
     
     # Fetch hash with proper error handling
     if hash=$(nix-prefetch-url "$url" --unpack 2>/dev/null); then
-        echo "✓"
-        # nix-prefetch-url outputs base32, but Nix accepts both base32 and base64 in SRI format
-        # We'll use the base32 format with sha256- prefix (SRI format)
-        sri_hash="sha256-$hash"
+        fetched_hashes["$platform"]="$hash"
+        echo "fetched"
+    else
+        echo "✗ FAILED"
+        echo "Error: Failed to fetch $platform binary from $url" >&2
+        exit 1
+    fi
+done
+
+echo
+echo "Verifying consistency (fetching again to ensure no TOCTOU)..."
+
+# Second pass: verify hashes are consistent
+for platform in "${PLATFORMS[@]}"; do
+    echo -n "  $platform: "
+    
+    # Determine platform parts
+    case $platform in
+        *-darwin) os="darwin" ;;
+        *-linux) os="linux" ;;
+    esac
+    
+    case $platform in
+        aarch64-*) arch="aarch64" ;;
+        x86_64-*) arch="x86_64" ;;
+    esac
+    
+    url="https://github.com/vlcn-io/cr-sqlite/releases/download/v${NEW_VERSION}/crsqlite-${os}-${arch}.zip"
+    
+    # Fetch hash again and verify consistency
+    if hash2=$(nix-prefetch-url "$url" --unpack 2>/dev/null); then
+        if [ "${fetched_hashes[$platform]}" = "$hash2" ]; then
+            echo "✓ consistent"
+        else
+            echo "✗ INCONSISTENT!"
+            echo "Error: Hash mismatch for $platform (possible TOCTOU attack)" >&2
+            echo "  First:  ${fetched_hashes[$platform]}" >&2
+            echo "  Second: $hash2" >&2
+            exit 1
+        fi
+    else
+        echo "✗ FAILED"
+        echo "Error: Failed to re-fetch $platform binary" >&2
+        exit 1
+    fi
+done
+
+echo
+echo "Writing hashes..."
+
+# Write hashes
+for platform in "${PLATFORMS[@]}"; do
+    hash="${fetched_hashes[$platform]}"
+        # Convert to SRI format for consistency
+        # Note: 'nix hash to-sri' is deprecated, using 'nix hash convert'
+        if command -v nix hash convert &>/dev/null; then
+            sri_hash=$(echo "$hash" | nix hash convert --hash-algo sha256 --to sri 2>/dev/null || echo "sha256-$hash")
+        else
+            # Fallback for older nix versions
+            sri_hash="sha256-$hash"
+        fi
+        echo "✓ ($sri_hash)"
         echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
     else
         echo "✗ FAILED"

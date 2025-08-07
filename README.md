@@ -145,4 +145,12 @@ This project includes comprehensive GitHub Actions workflows:
 
 ## License
 
-This wrapper is provided as-is. cr-sqlite is licensed under its own terms.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Components:
+- **sqlite-cr wrapper**: MIT License (this project)
+- **SQLite**: Public domain
+- **cr-sqlite extension**: MIT License © 2023 One Law LLC
+- **libcrsqlite binaries**: Redistributed under MIT License from [vlcn-io/cr-sqlite](https://github.com/vlcn-io/cr-sqlite)
+
+Note: This project redistributes pre-built binaries from the cr-sqlite project. Please refer to the upstream project for their complete license terms.

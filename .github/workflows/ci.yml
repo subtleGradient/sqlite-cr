@@ -9,9 +9,10 @@ jobs:
           - os: ubuntu-latest
             name: Linux x86_64
           - os: ubuntu-latest
-            name: Linux ARM64
-            # Note: GitHub doesn't have native ARM64 Linux runners yet
-            # This will use QEMU emulation or you can self-host
+            name: Linux ARM64 (QEMU - smoke test only)
+            # ⚠️ WARNING: This runs under QEMU emulation, not native ARM64
+            # Performance and some syscalls may differ from real ARM hardware
+            # Consider this a smoke test only - not a full verification
           - os: macos-15
             name: macOS x86_64
           - os: macos-14

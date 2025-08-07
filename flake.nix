@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2024 subtleGradient
+
 {
   description = "SQLite with cr-sqlite CRDT extension pre-loaded";
 
@@ -65,12 +68,26 @@
         };
 
         sqlite-cr = pkgs.writeShellScriptBin "sqlite-cr" ''
-          # Find the correct library file
-          LIB=$(find "${crsqlite}/lib" -name 'libcrsqlite.*' | head -n1)
+          # Find the correct library file (must be exactly one)
+          mapfile -t libs < <(find "${crsqlite}/lib" -name 'libcrsqlite.*' -type f)
           
-          # Precise stderr filtering - remove exact error line
+          if [ ''${#libs[@]} -eq 0 ]; then
+              echo "Error: No cr-sqlite library found in ${crsqlite}/lib" >&2
+              exit 1
+          elif [ ''${#libs[@]} -gt 1 ]; then
+              echo "Error: Multiple cr-sqlite libraries found:" >&2
+              printf '  %s\n' "''${libs[@]}" >&2
+              echo "This is a security risk - refusing to load" >&2
+              exit 1
+          fi
+          
+          LIB="''${libs[0]}"
+          
+          # Use a simple grep filter that doesn't interfere with the process
+          # The -F flag treats the pattern as a fixed string, -x matches whole lines
+          # This approach is more reliable in a Nix shell script context
           exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" \
-            2> >(grep -vxF "Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups" >&2)
+            2> >(grep -vxF "Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups" >&2 || true)
         '';
         
         # Test runner as a separate package for CI
