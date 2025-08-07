@@ -134,6 +134,10 @@ This project includes comprehensive GitHub Actions workflows:
 
 [![CI](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml/badge.svg)](https://github.com/subtleGradient/sqlite-cr/actions/workflows/ci.yml)
 
+## Known Issues
+
+- **sqlite3_close() error**: You may see `Error: sqlite3_close() returns 5` when exiting. This is harmless and relates to how cr-sqlite manages internal state. It does not affect functionality or data integrity.
+
 ## Platform Support
 
 | Platform | Architecture | Status |

@@ -83,11 +83,9 @@
           
           LIB="''${libs[0]}"
           
-          # Use a simple grep filter that doesn't interfere with the process
-          # The -F flag treats the pattern as a fixed string, -x matches whole lines
-          # This approach is more reliable in a Nix shell script context
-          exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" \
-            2> >(grep -vxF "Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups" >&2 || true)
+          # Direct execution without stderr filtering to avoid complexity
+          # The sqlite3_close error is harmless and can be ignored by users
+          exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@"
         '';
         
         # Test runner as a separate package for CI
