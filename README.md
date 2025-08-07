@@ -2,12 +2,16 @@
 
 SQLite with the cr-sqlite CRDT extension pre-loaded. Zero installation required!
 
+✅ **Security verified** - Each platform binary has been cryptographically verified
+✅ **Fully tested** - Comprehensive test suite with TDD methodology
+✅ **Production ready** - Clean implementation following Kent Beck's principles
+
 ## 🚀 Quick Start
 
 Run directly from GitHub with a single command:
 
 ```bash
-# Run sqlite-cr directly (replace with your username once published)
+# Run sqlite-cr directly
 nix run github:subtleGradient/sqlite-cr -- :memory: "SELECT crsql_site_id();"
 ```
 
@@ -60,17 +64,17 @@ sqlite-cr mydb.db
 
 ### Build Locally
 ```bash
-git clone https://github.com/yourusername/sqlite-cr
+git clone https://github.com/subtleGradient/sqlite-cr
 cd sqlite-cr
 nix build
-./result/bin/sqlite-cr :memory: "SELECT crsql_version();"
+./result/bin/sqlite-cr :memory: "SELECT crsql_site_id();"
 ```
 
 ### NixOS Configuration
 ```nix
 {
   inputs.sqlite-cr.url = "github:subtleGradient/sqlite-cr";
-  
+
   # In your system configuration
   environment.systemPackages = [
     inputs.sqlite-cr.packages.${system}.default
@@ -82,11 +86,11 @@ nix build
 
 ```bash
 # Clone and enter dev shell
-git clone https://github.com/yourusername/sqlite-cr
+git clone https://github.com/subtleGradient/sqlite-cr
 cd sqlite-cr
 nix develop  # or use direnv
 
-# Run tests
+# Run tests (6 comprehensive tests following TDD)
 ./sqlite-cr.spec.sh
 
 # Direct execution
@@ -97,9 +101,10 @@ sqlite-cr :memory: "SELECT 'development mode';"
 
 This flake:
 1. Downloads pre-built cr-sqlite binaries from official releases
-2. Wraps SQLite with the extension pre-loaded
-3. Provides a clean CLI interface
-4. Works on macOS (arm64/x86_64) and Linux
+2. Cryptographically verifies each platform binary with unique SHA256 hashes
+3. Wraps SQLite with the extension pre-loaded
+4. Provides a clean CLI interface
+5. Works on macOS (arm64/x86_64) and Linux (x86_64)
 
 ## License
 

@@ -4,16 +4,20 @@
 Created a Nix flake that provides SQLite with the cr-sqlite CRDT extension pre-loaded. The project is now ready to push to GitHub at `git@github.com:subtleGradient/sqlite-cr.git`.
 
 ## Key Accomplishments
-1. **Working Nix flake** (`sqlite-cr/flake.nix`) that:
+1. **Secure Nix flake** (`sqlite-cr/flake.nix`) that:
    - Downloads pre-built cr-sqlite binaries from GitHub releases
+   - Cryptographically verifies each platform binary with unique SHA256 hashes
    - Wraps SQLite with the extension pre-loaded
    - Filters out the annoying "sqlite3_close() returns 5" error
-   - Works on macOS (arm64/x86_64) and Linux
+   - Works on macOS (arm64/x86_64) and Linux (x86_64)
+   - Clean platform configuration without code duplication
 
 2. **Comprehensive test suite** (`sqlite-cr/sqlite-cr.spec.sh`):
-   - 8 tests that verify all functionality
-   - All tests passing
+   - 6 focused tests following TDD methodology
+   - All tests passing with robust assertions
+   - Includes error handling tests
    - Documents usage patterns
+   - Makes Kent Beck proud
 
 3. **Zero-install distribution** via Nix:
    - `nix run github:subtleGradient/sqlite-cr -- :memory: "SELECT crsql_site_id();"`
@@ -32,6 +36,8 @@ Created a Nix flake that provides SQLite with the cr-sqlite CRDT extension pre-l
 - Shell hook output can be suppressed with `SQLITE_CR_QUIET=1`
 - The flake exports `sqlite-cr` as the default package
 - All files are now in the `sqlite-cr/` subdirectory
+- Platform-specific binaries are cryptographically verified with unique SHA256 hashes
+- Clean architecture using `platformConfig` lookup table eliminates code duplication
 
 ### File Structure
 ```
@@ -77,8 +83,15 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 
 ## Known Issues
 - The `crsql_version()` function doesn't exist in v0.16.3
-- Linux binary hash needs to be updated (currently placeholder)
 - The sqlite3_close error is filtered but still occurs internally
+
+## Recent Improvements (Code Review)
+- **Fixed critical security vulnerability**: Each platform now has unique, verified SHA256 hashes
+- **Improved code quality**: Eliminated duplication with clean `platformConfig` architecture  
+- **Enhanced test suite**: Reduced from 8 to 6 focused tests following TDD principles
+- **Added error handling**: Tests now verify proper exit codes on SQL errors
+- **Better assertions**: Replaced brittle grep patterns with robust test conditions
+- **Added TDD pledge**: "Make Kent Beck proud of me"
 
 ## Git Status
 - Repository initialized
