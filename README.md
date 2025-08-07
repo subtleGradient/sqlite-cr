@@ -2,10 +2,10 @@
 
 SQLite with the cr-sqlite CRDT extension pre-loaded. Zero installation required!
 
-✅ **Security verified** - Each platform binary has been cryptographically verified
 ✅ **Fully tested** - Comprehensive test suite with TDD methodology
 ✅ **Fast & streaming** - Direct output streaming, no buffering delays
 ✅ **Multi-platform** - macOS (arm64/x86_64) and Linux (x86_64/arm64)
+✅ **Easy updates** - Simple version bump script included
 
 ## 🚀 Quick Start
 
@@ -102,11 +102,20 @@ sqlite-cr :memory: "SELECT 'development mode';"
 
 This flake:
 1. Downloads pre-built cr-sqlite binaries from official releases
-2. Cryptographically verifies each platform binary with unique SHA256 hashes
+2. Verifies downloads with Nix-provided SHA256 hashes
 3. Wraps SQLite with the extension pre-loaded
 4. Provides a clean CLI interface
 5. Works on macOS (arm64/x86_64) and Linux (x86_64/arm64)
 6. Streams output directly without buffering for better performance
+
+## Updating cr-sqlite Version
+
+To update to a new cr-sqlite version:
+```bash
+./update-version.sh 0.17.0  # Replace with desired version
+```
+
+This script automatically fetches new hashes and runs tests.
 
 ## Platform Support
 

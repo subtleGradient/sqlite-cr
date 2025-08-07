@@ -13,35 +13,33 @@
           inherit system;
         };
 
-        # Download pre-built cr-sqlite binaries for all platforms
-        platformConfig = {
-          "aarch64-darwin" = {
-            url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-darwin-aarch64.zip";
-            hash = "sha256-3SX8QwdI+WBUSgjdZq9xnPhQWtJrBXFamzrcMiWhOWM=";
-            lib = "crsqlite.dylib";
-          };
-          "x86_64-darwin" = {
-            url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-darwin-x86_64.zip";
-            hash = "sha256-1ps0vlpf3j6914qjpymm1j7fw10s4sz3q23w064mipc22rgdsckr";
-            lib = "crsqlite.dylib";
-          };
-          "x86_64-linux" = {
-            url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-linux-x86_64.zip";
-            hash = "sha256-0q21a13mi0hrmg5d928vbnqvhrixd3qfs6cd1bbya17m6f1ic3d0";
-            lib = "crsqlite.so";
-          };
-          "aarch64-linux" = {
-            url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v0.16.3/crsqlite-linux-aarch64.zip";
-            hash = "sha256-1cspr6rv1r86jym8lplpajzhj623n9dzvhszfccblhmrxzm9csdr";
-            lib = "crsqlite.so";
-          };
+        version = "0.16.3";
+        
+        # Constants to avoid duplication
+        errorToFilter = "sqlite3_close() returns 5";
+        
+        # Single source of truth for hashes
+        hashes = {
+          "aarch64-darwin" = "sha256-3SX8QwdI+WBUSgjdZq9xnPhQWtJrBXFamzrcMiWhOWM=";
+          "x86_64-darwin" = "sha256-1ps0vlpf3j6914qjpymm1j7fw10s4sz3q23w064mipc22rgdsckr";
+          "x86_64-linux" = "sha256-0q21a13mi0hrmg5d928vbnqvhrixd3qfs6cd1bbya17m6f1ic3d0";
+          "aarch64-linux" = "sha256-1cspr6rv1r86jym8lplpajzhj623n9dzvhszfccblhmrxzm9csdr";
         };
 
-        config = platformConfig.${system} or (throw "Unsupported platform: ${system}");
+        # Platform-specific configuration
+        libName = if pkgs.stdenv.isDarwin then "crsqlite.dylib" else "crsqlite.so";
+        platform = if pkgs.stdenv.isDarwin then "darwin" else "linux";
+        arch = if system == "aarch64-darwin" || system == "aarch64-linux" then "aarch64" else "x86_64";
+        
+        config = {
+          url = "https://github.com/vlcn-io/cr-sqlite/releases/download/v${version}/crsqlite-${platform}-${arch}.zip";
+          hash = hashes.${system} or (throw "Unsupported platform: ${system}");
+          lib = libName;
+        };
 
         crsqlite = pkgs.stdenv.mkDerivation rec {
           pname = "crsqlite";
-          version = "0.16.3";
+          inherit version;
 
           src = pkgs.fetchzip {
             url = config.url;
@@ -51,12 +49,13 @@
 
           installPhase = ''
             mkdir -p $out/lib
-            # Handle both root and subdirectory extraction
-            if [ -f ${config.lib} ]; then
-              cp ${config.lib} $out/lib/lib${config.lib}
-            else
-              find . -name ${config.lib} -exec cp {} $out/lib/lib${config.lib} \;
+            # Find exactly one library file and install it
+            libFile=$(find . -name ${config.lib} -type f | head -n1)
+            if [ -z "$libFile" ]; then
+              echo "Error: ${config.lib} not found in archive" >&2
+              exit 1
             fi
+            cp "$libFile" $out/lib/lib${config.lib}
           '';
         };
 
@@ -66,7 +65,7 @@
           
           # Stream output directly with stderr filtering
           exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" \
-            2> >(grep -v "sqlite3_close() returns 5" >&2)
+            2> >(grep -v "${errorToFilter}" >&2)
         '';
 
       in {

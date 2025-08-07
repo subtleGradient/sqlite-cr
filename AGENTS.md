@@ -99,6 +99,15 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 - **Optimized test suite**: All tests run in single nix develop session (30-60s → ~5s)
 - **Removed unnecessary chmod**: Libraries no longer marked executable
 
+## Improvements
+- **Eliminated duplication**: Single hash map, computed platform config
+- **Robust test assertions**: CSV mode for predictable output, no brittle string matching
+- **Extracted constants**: Magic error string defined once
+- **Simplified platform logic**: Uses Nix's stdenv helpers
+- **Safe installPhase**: Finds exactly one file, fails clearly if missing
+- **Added micro-test**: Tests wrapper's stderr filtering behavior
+- **Version bump automation**: update-version.sh script for painless updates
+
 ## Git Status
 - Repository initialized
 - All files committed with descriptive message
