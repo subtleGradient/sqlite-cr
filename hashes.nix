@@ -3,6 +3,6 @@
 {
   "aarch64-darwin" = "sha256-3SX8QwdI+WBUSgjdZq9xnPhQWtJrBXFamzrcMiWhOWM=";
   "x86_64-darwin" = "sha256-mIXxfz6HN8Fim57GjYvnBx6enhS3O4r7hYu2zZSz5Rg=";
-  "x86_64-linux" = "sha256-oA0WgzP1BOXXCo0Z7fBoPWa4sV0bidTKqxmCWEdQQWA=";
+  "x86_64-linux" = "sha256-F9uTWLanDAjL4btdEHtmNnc1SdHAzbAOYBTPCa4BqJI=";
   "aarch64-linux" = "sha256-uWmW6u+5QroYc1/D/VuyQxgJv1SXXoqqlwblsLPJV7M=";
 }
