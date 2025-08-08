@@ -32,7 +32,7 @@ Created a Nix flake that provides SQLite with the cr-sqlite CRDT extension pre-l
 
 ### Key Implementation Points
 - The wrapper script filters stderr to remove the sqlite3_close error
-- Shell hook output can be suppressed with `SQLITE_CR_QUIET=1`
+- Opt-out: set `SQLITE_CR_SHOW_CLOSE5=1` to show the close(5) line
 - The flake exports `sqlite-cr` as the default package
 - All files are now in the `sqlite-cr/` subdirectory
 - Platform-specific binaries are cryptographically verified with unique SHA256 hashes
@@ -111,7 +111,7 @@ nix run github:subtleGradient/sqlite-cr -- :memory: "
 ## CI/CD Implementation
 - **Multi-platform CI**: Tests on Linux/macOS × x86_64/ARM64 via GitHub Actions
 - **Automatic hash validation**: CI fails fast on placeholder hashes
-- **Daily dependency checks**: Monitors for outdated flake inputs
+- **Monthly dependency checks**: Monitors for outdated flake inputs
 - **Release automation**: Tagged versions build platform binaries
 - **Fast Nix setup**: Uses DeterminateSystems installer (2-3s vs 60s)
 - **Optional caching**: Cachix configuration for faster rebuilds

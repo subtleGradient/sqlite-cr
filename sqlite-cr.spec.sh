@@ -32,7 +32,7 @@ assert_csv_query() {
     echo -n "✓ $description... "
 
     # Use CSV mode to get predictable output format
-    if output=$(sqlite-cr -csv :memory: "$query" 2>/dev/null); then
+    if output=$(sqlite-cr -csv :memory: "$query" 2>&1); then
         if [[ "$output" == "$expected" ]]; then
             echo "PASS"
             ((TESTS_PASSED++))
@@ -43,7 +43,8 @@ assert_csv_query() {
             return 1
         fi
     else
-        echo "FAIL (query error: $output)"
+        echo "FAIL (query error)"
+        >&2 printf '%s\n' "$output"
         ((TESTS_FAILED++))
         return 1
     fi

@@ -91,11 +91,11 @@
           # Surgical stderr filter for sqlite3_close() returns 5 error
           if [ -n "''${SQLITE_CR_SHOW_CLOSE5:-}" ]; then
               # User wants to see the close5 error
-              exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@"
+              exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load \"$LIB\"" "$@"
           else
               # Filter out the specific error line when exit code is 0
               tmpfile="$(${pkgs.coreutils}/bin/mktemp)"
-              ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" 2>"$tmpfile"
+              ${pkgs.sqlite}/bin/sqlite3 -cmd ".load \"$LIB\"" "$@" 2>"$tmpfile"
               exit_code=$?
 
               if [ $exit_code -eq 0 ]; then
@@ -131,7 +131,7 @@
               echo -n "✓ $description... "
 
               # Use CSV mode to get predictable output format
-              if output=$(sqlite-cr -csv :memory: "$query" 2>/dev/null); then
+              if output=$(sqlite-cr -csv :memory: "$query" 2>&1); then
                   if [[ "$output" == "$expected" ]]; then
                       echo "PASS"
                       ((TESTS_PASSED++))
@@ -142,7 +142,8 @@
                       return 1
                   fi
               else
-                  echo "FAIL (query error: $output)"
+                  echo "FAIL (query error)"
+                  >&2 printf '%s\n' "$output"
                   ((TESTS_FAILED++))
                   return 1
               fi
@@ -222,13 +223,22 @@
           inherit tests crsqlite;
         };
 
+        checks = {
+          tests = self.packages.${system}.tests;
+        };
+
         apps = {
           default = flake-utils.lib.mkApp { drv = self.packages.${system}.default; };
           tests = flake-utils.lib.mkApp { drv = self.packages.${system}.tests; };
         };
 
         devShells.default = pkgs.mkShell {
-          buildInputs = [ self.packages.${system}.default pkgs.sqlite ];
+          buildInputs = [
+            self.packages.${system}.default
+            pkgs.sqlite
+            pkgs.jq
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.inotify-tools ]
+            ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.fswatch ];
           shellHook = ''
             if [ -n "''${PS1:-}" ]; then
               echo "🔗 cr-sqlite loaded in: ${crsqlite}/lib/"

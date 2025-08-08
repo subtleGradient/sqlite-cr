@@ -120,7 +120,7 @@ This flake:
 
 To update to a new cr-sqlite version:
 ```bash
-./update-version.sh 0.17.0  # Replace with desired version
+nix develop -c ./update-version.sh 0.17.0  # ensures Bash ≥ 4 and nix tools
 ```
 
 This script automatically fetches new hashes and runs tests.
