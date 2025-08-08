@@ -134,17 +134,17 @@
               if output=$(sqlite-cr -csv :memory: "$query" 2>&1); then
                   if [[ "$output" == "$expected" ]]; then
                       echo "PASS"
-                      ((TESTS_PASSED++))
+                      ((TESTS_PASSED+=1))
                       return 0
                   else
                       echo "FAIL (expected '$expected', got: '$output')"
-                      ((TESTS_FAILED++))
+                      ((TESTS_FAILED+=1))
                       return 1
                   fi
               else
                   echo "FAIL (query error)"
                   >&2 printf '%s\n' "$output"
-                  ((TESTS_FAILED++))
+                  ((TESTS_FAILED+=1))
                   return 1
               fi
           }
@@ -171,16 +171,17 @@
           assert_true "SELECT COUNT(*) >= 5 FROM pragma_function_list WHERE name LIKE 'crsql%';" "provides cr-sqlite function suite"
 
           # Test 5: CRDT operations
-          assert_csv_query "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" "test-data" "performs CRDT data operations"
+          assert_csv_query "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" "OK
+test-data" "performs CRDT data operations"
 
           # Test 6: Error handling
           echo -n "✓ handles SQL errors with proper exit codes... "
           if ! sqlite-cr :memory: "INVALID SQL SYNTAX;" 2>/dev/null; then
               echo "PASS"
-              ((TESTS_PASSED++))
+              ((TESTS_PASSED+=1))
           else
               echo "FAIL"
-              ((TESTS_FAILED++))
+              ((TESTS_FAILED+=1))
           fi
 
           # Test 7: Stderr filtering (close5 error suppressed on success)
@@ -188,10 +189,10 @@
           stderr_output=$({ sqlite-cr :memory: "SELECT 1;" 1>/dev/null; } 2>&1)
           if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
               echo "PASS"
-              ((TESTS_PASSED++))
+              ((TESTS_PASSED+=1))
           else
               echo "FAIL (close5 error not filtered: $stderr_output)"
-              ((TESTS_FAILED++))
+              ((TESTS_FAILED+=1))
           fi
 
           echo
