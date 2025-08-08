@@ -13,7 +13,7 @@ Run directly from GitHub with a single command:
 
 ```bash
 # Run sqlite-cr directly
-nix run github:subtleGradient/sqlite-cr -- :memory: "SELECT crsql_site_id();"
+nix run github:subtleGradient/sqlite-cr -- :memory: "SELECT hex(crsql_site_id())"
 ```
 
 That's it! No clone, no install, just run.
