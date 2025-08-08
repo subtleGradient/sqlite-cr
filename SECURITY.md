@@ -21,4 +21,5 @@ This project redistributes pre-built binaries from the cr-sqlite project. We imp
 
 ## Reporting Security Issues
 
-Please report security issues to [create an issue](https://github.com/subtleGradient/sqlite-cr/issues) with the "security" label.
+Please report security issues via **GitHub Private Vulnerability Reporting** (recommended),
+or email oblivious@subtlegradient.com for coordinated disclosure.

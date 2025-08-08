@@ -163,7 +163,7 @@ The filtering is surgical - only the exact error line is removed, preserving all
 | macOS    | arm64 (Apple Silicon) | ✅ Verified |
 | macOS    | x86_64 (Intel) | ✅ Verified |
 | Linux    | x86_64 | ✅ Verified |
-| Linux    | arm64/aarch64 | ✅ Verified |
+| Linux    | arm64/aarch64 | ✅ Built (runtime unverified in CI) |
 
 ## License
 
