@@ -147,15 +147,6 @@ bench: build
 		SELECT COUNT(*) as records FROM test;
 	"
 
-# Docker targets (if someone wants to containerize)
-
-## docker: Build Docker image with Nix
-docker:
-	@echo "Building Docker image..."
-	@nix build .#dockerImage
-	@echo "✅ Docker image built: ./result"
-	@echo "📦 Load with: docker load < ./result"
-
 # Development helpers
 
 ## watch: Watch for changes and run tests

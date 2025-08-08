@@ -29,7 +29,7 @@ jobs:
           
           Via Nix:
           ```bash
-          nix run github:${{ github.repository }}#sqlite-cr -- :memory: "SELECT crsql_site_id();"
+          nix run github:${{ github.repository }} -- :memory: "SELECT crsql_site_id();"
           ```
           
           Or download platform-specific binaries below.
@@ -45,10 +45,10 @@ jobs:
           - os: ubuntu-latest
             system: aarch64-linux
             name: linux-aarch64
-          - os: macos-15
+          - os: macos-13
             system: x86_64-darwin
             name: darwin-x86_64
-          - os: macos-14
+          - os: macos-15
             system: aarch64-darwin
             name: darwin-aarch64
     runs-on: ${{ matrix.os }}

@@ -85,7 +85,7 @@ fi
 
 # Test 7: Stderr filtering (close5 error suppressed on success)
 echo -n "✓ suppresses sqlite3_close error on successful execution... "
-stderr_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 >/dev/null)
+stderr_output=$({ sqlite-cr :memory: "SELECT 1;" 1>/dev/null; } 2>&1)
 if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
     echo "PASS"
     ((TESTS_PASSED++))

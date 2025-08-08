@@ -22,7 +22,7 @@
 - Created SECURITY.md with threat model documentation
 
 ### Known Limitations
-- stderr filtering removed due to shell complexity - error now visible but documented
+- surgical stderr filter removes sqlite3_close() error on success, opt-out via SQLITE_CR_SHOW_CLOSE5=1
 - No upstream GPG signatures available - using TOFU model
 - ARM64 Linux testing runs under QEMU emulation
 

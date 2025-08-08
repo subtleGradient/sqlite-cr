@@ -72,6 +72,7 @@
         };
 
         sqlite-cr = pkgs.writeShellScriptBin "sqlite-cr" ''
+          set -euo pipefail
           # Find the correct library file (must be exactly one)
           mapfile -t libs < <(find "${crsqlite}/lib" -name 'libcrsqlite.*' -type f)
 
@@ -93,13 +94,13 @@
               exec ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@"
           else
               # Filter out the specific error line when exit code is 0
-              tmpfile=$(mktemp)
+              tmpfile="$(${pkgs.coreutils}/bin/mktemp)"
               ${pkgs.sqlite}/bin/sqlite3 -cmd ".load $LIB" "$@" 2>"$tmpfile"
               exit_code=$?
 
               if [ $exit_code -eq 0 ]; then
                   # Success: filter out the exact error line
-                  sed '/^Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups$/d' "$tmpfile" >&2
+                  ${pkgs.gnused}/bin/sed '/^Error: sqlite3_close() returns 5: unable to close due to unfinalized statements or unfinished backups$/d' "$tmpfile" >&2
               else
                   # Error: show all stderr as-is
                   cat "$tmpfile" >&2
@@ -115,7 +116,6 @@
           #!${pkgs.bash}/bin/bash
           set -euo pipefail
           export PATH="${sqlite-cr}/bin:$PATH"
-          export SQLITE_CR_QUIET=1
 
           # Test counter
           TESTS_PASSED=0
@@ -184,7 +184,7 @@
 
           # Test 7: Stderr filtering (close5 error suppressed on success)
           echo -n "✓ suppresses sqlite3_close error on successful execution... "
-          stderr_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 >/dev/null)
+          stderr_output=$({ sqlite-cr :memory: "SELECT 1;" 1>/dev/null; } 2>&1)
           if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
               echo "PASS"
               ((TESTS_PASSED++))
@@ -230,7 +230,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [ self.packages.${system}.default pkgs.sqlite ];
           shellHook = ''
-            if [ -z "''${SQLITE_CR_QUIET:-}" ] && [ -n "''${PS1:-}" ]; then
+            if [ -n "''${PS1:-}" ]; then
               echo "🔗 cr-sqlite loaded in: ${crsqlite}/lib/"
               echo "📦 Run 'sqlite-cr' for SQLite with cr-sqlite pre-loaded"
               echo "🧪 Run 'nix run .#tests' to run test suite"

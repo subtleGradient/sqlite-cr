@@ -9,9 +9,9 @@ jobs:
           - os: ubuntu-latest
             name: Linux x86_64
           - os: macos-15
-            name: macOS x86_64
-          - os: macos-14
-            name: macOS ARM64 (Apple Silicon)
+            name: macOS ARM64 (Sequoia)
+          - os: macos-13
+            name: macOS x86_64 (Intel)
     runs-on: ${{ matrix.os }}
     name: Build & Test (${{ matrix.name }})
 
