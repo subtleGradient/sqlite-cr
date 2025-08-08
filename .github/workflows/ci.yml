@@ -1,5 +1,8 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
   build-test:
@@ -8,15 +11,10 @@ jobs:
         include:
           - os: ubuntu-latest
             name: Linux x86_64
-          - os: ubuntu-latest
-            name: Linux ARM64 (QEMU - smoke test only)
-            # ⚠️ WARNING: This runs under QEMU emulation, not native ARM64
-            # Performance and some syscalls may differ from real ARM hardware
-            # Consider this a smoke test only - not a full verification
           - os: macos-15
-            name: macOS x86_64
-          - os: macos-14
-            name: macOS ARM64 (Apple Silicon)
+            name: macOS ARM64 (Sequoia)
+          - os: macos-13
+            name: macOS x86_64 (Intel)
     runs-on: ${{ matrix.os }}
     name: Build & Test (${{ matrix.name }})
 
@@ -50,7 +48,7 @@ jobs:
 
     # Build the package
     - name: Build sqlite-cr
-      run: nix build .#sqlite-cr
+      run: nix build .#default
 
     # Test the built binary
     - name: Test built binary
@@ -62,5 +60,5 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: sqlite-cr-${{ matrix.name }}
+        name: sqlite-cr-${{ matrix.os }}
         path: result/bin/sqlite-cr

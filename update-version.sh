@@ -3,6 +3,12 @@
 # SPDX-FileCopyrightText: 2024 subtleGradient
 set -euo pipefail
 
+# Check Bash version (declare -A requires Bash >= 4)
+if [ -z "${BASH_VERSINFO:-}" ] || [ "${BASH_VERSINFO%%.*}" -lt 4 ]; then
+  echo "Error: Bash >= 4 required. Run inside 'nix develop' (or install newer bash)." >&2
+  exit 1
+fi
+
 # update-version.sh
 # Script to update cr-sqlite version and regenerate hashes
 # Makes version bumps painless and ensures green commits
@@ -51,9 +57,13 @@ echo "   This is a TOFU (Trust On First Use) operation."
 echo "   Verify the upstream release before trusting these hashes!"
 echo "   Release URL: https://github.com/vlcn-io/cr-sqlite/releases/tag/v${NEW_VERSION}"
 echo
-read -p "Continue? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [ "${NONINTERACTIVE:-0}" = "1" ]; then
+  REPLY=y
+else
+  read -p "Continue? (y/N) " -n 1 -r
+  echo
+fi
+if [[ ! ${REPLY:-} =~ ^[Yy]$ ]]; then
     echo "Aborted."
     exit 1
 fi
@@ -133,22 +143,12 @@ echo "Writing hashes..."
 # Write hashes
 for platform in "${PLATFORMS[@]}"; do
     hash="${fetched_hashes[$platform]}"
-        # Convert to SRI format for consistency
-        # Note: 'nix hash to-sri' is deprecated, using 'nix hash convert'
-        if command -v nix hash convert &>/dev/null; then
-            sri_hash=$(echo "$hash" | nix hash convert --hash-algo sha256 --to sri 2>/dev/null || echo "sha256-$hash")
-        else
-            # Fallback for older nix versions
-            sri_hash="sha256-$hash"
-        fi
-        echo "✓ ($sri_hash)"
-        echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
-    else
-        echo "✗ FAILED"
-        echo "Error: Failed to fetch $platform binary from $url" >&2
-        rm -f hashes.nix.new
-        exit 1
+    # Convert to SRI (base64) for consistency
+    if command -v nix >/dev/null 2>&1; then
+        sri_hash="$(printf '%s' "$hash" | nix hash convert --hash-algo sha256 --to sri 2>/dev/null || true)"
     fi
+    : "${sri_hash:=sha256-$hash}"
+    echo "  \"$platform\" = \"$sri_hash\";" >> hashes.nix.new
 done
 
 echo "}" >> hashes.nix.new

@@ -142,18 +142,10 @@ bench: build
 	@time ./result/bin/sqlite-cr :memory: "
 		CREATE TABLE test(id INTEGER PRIMARY KEY, data TEXT);
 		SELECT crsql_as_crr('test');
-		INSERT INTO test SELECT value, 'data-' || value FROM generate_series(1,1000);
+		WITH RECURSIVE gen(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM gen WHERE i<1000)
+		INSERT INTO test SELECT i, 'data-' || i FROM gen;
 		SELECT COUNT(*) as records FROM test;
 	"
-
-# Docker targets (if someone wants to containerize)
-
-## docker: Build Docker image with Nix
-docker:
-	@echo "Building Docker image..."
-	@nix build .#dockerImage
-	@echo "✅ Docker image built: ./result"
-	@echo "📦 Load with: docker load < ./result"
 
 # Development helpers
 

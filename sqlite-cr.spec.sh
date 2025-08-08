@@ -28,23 +28,24 @@ assert_csv_query() {
     local expected="$2"
     local description="$3"
     local output
-    
+
     echo -n "✓ $description... "
-    
+
     # Use CSV mode to get predictable output format
-    if output=$(sqlite-cr :memory: "$query" -csv 2>&1); then
+    if output=$(sqlite-cr -csv :memory: "$query" 2>&1); then
         if [[ "$output" == "$expected" ]]; then
             echo "PASS"
-            ((TESTS_PASSED++))
+            ((TESTS_PASSED+=1))
             return 0
         else
             echo "FAIL (expected '$expected', got: '$output')"
-            ((TESTS_FAILED++))
+            ((TESTS_FAILED+=1))
             return 1
         fi
     else
-        echo "FAIL (query error: $output)"
-        ((TESTS_FAILED++))
+        echo "FAIL (query error)"
+        >&2 printf '%s\n' "$output"
+        ((TESTS_FAILED+=1))
         return 1
     fi
 }
@@ -71,27 +72,28 @@ assert_true "CREATE TABLE items(id INTEGER PRIMARY KEY NOT NULL, name TEXT); SEL
 assert_true "SELECT COUNT(*) >= 5 FROM pragma_function_list WHERE name LIKE 'crsql%';" "provides cr-sqlite function suite"
 
 # Test 5: CRDT operations
-assert_csv_query "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" "test-data" "performs CRDT data operations"
+assert_csv_query "CREATE TABLE docs(id INTEGER PRIMARY KEY NOT NULL, content TEXT); SELECT crsql_as_crr('docs'); INSERT INTO docs VALUES (42, 'test-data'); SELECT content FROM docs WHERE id = 42;" "OK
+test-data" "performs CRDT data operations"
 
 # Test 6: Error handling
 echo -n "✓ handles SQL errors with proper exit codes... "
 if ! sqlite-cr :memory: "INVALID SQL SYNTAX;" 2>/dev/null; then
     echo "PASS"
-    ((TESTS_PASSED++))
+    ((TESTS_PASSED+=1))
 else
     echo "FAIL"
-    ((TESTS_FAILED++))
+    ((TESTS_FAILED+=1))
 fi
 
-# Test 7: Stderr filtering precision
-echo -n "✓ filters only exact error message from stderr... "
-test_output=$(sqlite-cr :memory: "SELECT 1;" 2>&1 || true)
-if ! echo "$test_output" | grep -q "sqlite3_close() returns 5"; then
+# Test 7: Stderr filtering (close5 error suppressed on success)
+echo -n "✓ suppresses sqlite3_close error on successful execution... "
+stderr_output=$({ sqlite-cr :memory: "SELECT 1;" 1>/dev/null; } 2>&1)
+if [[ ! "$stderr_output" =~ "sqlite3_close() returns 5" ]]; then
     echo "PASS"
-    ((TESTS_PASSED++))
+    ((TESTS_PASSED+=1))
 else
-    echo "FAIL (error not filtered)"
-    ((TESTS_FAILED++))
+    echo "FAIL (close5 error not filtered: $stderr_output)"
+    ((TESTS_FAILED+=1))
 fi
 
 echo
