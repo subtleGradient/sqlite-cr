@@ -16,7 +16,7 @@ jobs:
     - uses: DeterminateSystems/nix-installer-action@v9
 
     # Check flake inputs are up to date
-    - uses: DeterminateSystems/flake-checker-action@v6
+    - uses: DeterminateSystems/flake-checker-action@v12
       with:
         send-pr-on-update: true
         pr-title: "Update flake.lock"
