@@ -24,7 +24,7 @@ jobs:
     - uses: actions/checkout@v4
 
     # Fast, reproducible Nix install
-    - uses: DeterminateSystems/nix-installer-action@v9
+    - uses: DeterminateSystems/nix-installer-action@v19
 
     # Enable flakes support
     - run: |
