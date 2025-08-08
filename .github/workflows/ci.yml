@@ -60,5 +60,5 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: sqlite-cr-${{ matrix.name }}
+        name: sqlite-cr-${{ matrix.os }}
         path: result/bin/sqlite-cr
