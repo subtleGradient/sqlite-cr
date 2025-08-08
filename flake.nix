@@ -16,7 +16,7 @@
           inherit system;
         };
 
-        version = "0.16.3";
+  version = "0.16.3";
 
         # Load hashes from separate file for easier updates
         hashes = import ./hashes.nix;
