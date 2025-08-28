@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# SPDX-FileCopyrightText: 2024 subtleGradient
+# SPDX-FileCopyrightText: 2025 Tom Aylott
 
 {
   description = "SQLite with cr-sqlite CRDT extension pre-loaded";
